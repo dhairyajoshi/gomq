@@ -1,12 +1,12 @@
-package server
+package connections
 
 import (
 	"fmt"
 	"net"
 )
 
-func Listen() {
-	listner, err := net.Listen("tcp", ":8000")
+func Listen(port string) {
+	listner, err := net.Listen("tcp", port)
 	if err != nil {
 		fmt.Println("error listening for connections!")
 	}
