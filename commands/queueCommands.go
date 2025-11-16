@@ -50,7 +50,7 @@ func consumeMessage(args ...any) (bool, string) {
 	queue, _ := queues.GetOrCreateQueue(queueName)
 	message := queue.Consume()
 	if !ok {
-		return false, "Couldn't enqueue message"
+		return false, "Couldn't consume message"
 	}
 	return false, string(message.Data)
 }

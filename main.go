@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/dhairyajoshi/gomq/commands"
 	"github.com/dhairyajoshi/gomq/connections"
@@ -9,7 +10,12 @@ import (
 
 func main() {
 	port := ":8000"
-	fmt.Println("Starting GOMQ on port: ", port)
 	commands.RegisterCommands()
-	connections.Listen(port)
+	mode := os.Args
+	if mode[1] == "serve" {
+		fmt.Println("Starting GOMQ on port: ", port)
+		connections.Listen(port)
+	} else {
+		connections.Connect(port)
+	}
 }

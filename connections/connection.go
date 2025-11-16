@@ -8,7 +8,7 @@ import (
 )
 
 func handleConn(conn net.Conn) {
-	_, err := conn.Write([]byte("Connected to GoMQ, ready to exchange messages!\n>"))
+	_, err := conn.Write([]byte("Connected to GoMQ, ready to exchange messages!\n"))
 	if err != nil {
 		fmt.Println("error writing to connection, ", err.Error())
 		conn.Close()
@@ -22,7 +22,7 @@ func handleConn(conn net.Conn) {
 			return
 		}
 		exit, response := commands.HandleCommand(string(input[:n]))
-		server_response := fmt.Sprint(response, "\n>")
+		server_response := fmt.Sprint(response, "\n")
 		conn.Write([]byte(server_response))
 		if exit {
 			conn.Close()
