@@ -18,7 +18,12 @@ func handleConn(conn net.Conn) {
 			fmt.Println("Error reading input: ", err.Error())
 			continue
 		}
-		fmt.Println("Received input: ", string(input))
-		conn.Write([]byte("Received input!\n>"))
+		exit, response := handleCommand(string(input))
+		server_response := fmt.Sprint(response, "\n>")
+		conn.Write([]byte(server_response))
+		if exit {
+			conn.Close()
+			return
+		}
 	}
 }
