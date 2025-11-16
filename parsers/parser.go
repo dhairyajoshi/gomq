@@ -1,8 +1,8 @@
 package parsers
 
 type DecodedMessage struct {
-	FuncName string   `json:"func"`
-	Args     []string `json:"args"`
+	FuncName string `json:"func"`
+	Args     []any  `json:"args"`
 }
 
 type Parser interface {

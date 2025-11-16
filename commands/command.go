@@ -19,7 +19,7 @@ func getParser() parsers.Parser {
 	return parsers.NewJsonParser()
 }
 
-func getCommandAndArgs(input string) (func(args ...any) (bool, string), []string) {
+func getCommandAndArgs(input string) (func(args ...any) (bool, string), []any) {
 	parser := getParser()
 	decodedInput := parser.Decode([]byte(input))
 	exec, exists := commandFactory[decodedInput.FuncName]
@@ -27,14 +27,14 @@ func getCommandAndArgs(input string) (func(args ...any) (bool, string), []string
 		fmt.Println("no function named ", decodedInput.FuncName)
 		return func(args ...any) (bool, string) {
 			return false, ""
-		}, []string{}
+		}, []any{}
 	}
 	return exec, decodedInput.Args
 }
 
 func getResponse(input string) (bool, string) {
 	fun, args := getCommandAndArgs(input)
-	return fun(args)
+	return fun(args...)
 }
 
 func HandleCommand(input string) (bool, string) {
