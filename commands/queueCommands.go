@@ -15,7 +15,7 @@ func createQueue(args ...any) (bool, string) {
 		fmt.Println("Name not a valid string: ", name)
 		return false, "Name not a valid string: "
 	}
-	_, created := queues.NewQueue(name)
+	_, created := queues.NewDurableQueue(name)
 	if created {
 		return false, "Queue created Successfuly"
 	}
@@ -33,7 +33,7 @@ func publishMessage(args ...any) (bool, string) {
 		fmt.Println("Invalid message ", message)
 		return false, "invalid message"
 	}
-	queue, _ := queues.GetOrCreateQueue(queueName)
+	queue, _ := queues.GetOrCreateDurableQueue(queueName)
 	ok = queue.Enqueue(messages.Message{Id: uuid.New().String(), Data: []byte(message), EnqueuedAt: time.Now().String()})
 	if !ok {
 		return false, "Couldn't enqueue message"
@@ -47,7 +47,7 @@ func consumeMessage(args ...any) (bool, string) {
 		fmt.Println("invalid queue name ", queueName)
 		return false, "invalid queue name"
 	}
-	queue, _ := queues.GetOrCreateQueue(queueName)
+	queue, _ := queues.GetOrCreateDurableQueue(queueName)
 	message := queue.Consume()
 	if !ok {
 		return false, "Couldn't consume message"
