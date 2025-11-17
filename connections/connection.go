@@ -2,6 +2,7 @@ package connections
 
 import (
 	"fmt"
+	oio "io"
 	"net"
 
 	"github.com/dhairyajoshi/gomq/commands"
@@ -21,7 +22,11 @@ func handleConn(conn net.Conn) {
 		input, err := ioHandler.Read()
 		if err != nil {
 			fmt.Println("Error reading input: ", err.Error())
-			return
+			if err == oio.EOF {
+				fmt.Println("Client disconnected")
+				return
+			}
+			continue
 		}
 		response := commands.HandleCommand(ioHandler, string(input))
 		ioHandler.Write(response)

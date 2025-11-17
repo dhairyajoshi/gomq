@@ -14,7 +14,7 @@ func getCommandAndArgs(input string) (func(args ...any) parsers.ServerResponse, 
 	if !exists {
 		fmt.Println("no function named ", decodedInput.FuncName)
 		return func(args ...any) parsers.ServerResponse {
-			return parsers.ServerResponse{}
+			return parsers.ServerResponse{Type: "server_response", Data: "No such operation!", SendNext: true}
 		}, []any{}
 	}
 	return exec, decodedInput.Args

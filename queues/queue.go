@@ -35,13 +35,19 @@ func (q *DurableQueue) getName() string {
 func (q *DurableQueue) Enqueue(message messages.Message) bool {
 	if len(q.subscribers) > 0 {
 		q.lock.Lock()
+		closedConns := []*io.IOHandler{}
 		for _, sub := range q.subscribers {
 			_, err := (*sub).Write(parsers.ServerResponse{Type: "message", Data: message, SendNext: false, Close: false})
 			if err != nil {
 				fmt.Println("error sending message to subscriber: ", err.Error())
 				(*sub).Write(parsers.ServerResponse{Type: "server_response", Data: "Closing connection!", SendNext: false, Close: true})
 				(*sub).Close()
+				closedConns = append(closedConns, sub)
 			}
+		}
+		for _, closedConn := range closedConns {
+			q.subscribers = slices.DeleteFunc(q.subscribers, func(sub *io.IOHandler) bool { return sub == closedConn })
+			fmt.Println("removed closed connection from subscribers!")
 		}
 		q.lock.Unlock()
 	} else {

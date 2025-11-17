@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	oio "io"
 	"net"
 	"os"
 	"strings"
@@ -76,6 +77,10 @@ func Connect(port string) {
 		resp, err := ioHandler.Read()
 		if err != nil {
 			fmt.Println("error reading from conn: ", err.Error())
+			if err == oio.EOF {
+				fmt.Println("server disconnected!")
+				return
+			}
 			continue
 		}
 		nextInput := handleResp(resp)
