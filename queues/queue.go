@@ -124,10 +124,16 @@ func GetQueue(name string) (*Queue, error) {
 
 func GetOrCreateDurableQueue(name string) (Queue, bool) {
 	QueueLock.RLock()
+	unlocked := false
 	queue, found := QueueStore[name]
 	if !found {
 		QueueLock.RUnlock()
+		unlocked = true
 		return NewDurableQueue(name)
+	}
+	if !unlocked {
+		QueueLock.RUnlock()
+		unlocked = true
 	}
 	return queue, false
 }
