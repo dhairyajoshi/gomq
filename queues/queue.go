@@ -16,7 +16,7 @@ type Queue interface {
 	Consume() (messages.Message, bool)
 	getDelivered() []messages.Message
 	getName() string
-	requeueMessage(idx int) bool
+	requeueMessage(id string) bool
 	Subscribe(*io.IOHandler) bool
 }
 
@@ -75,9 +75,14 @@ func (q *DurableQueue) getDelivered() []messages.Message {
 	return q.delivered
 }
 
-func (q *DurableQueue) requeueMessage(idx int) bool {
+func (q *DurableQueue) requeueMessage(id string) bool {
 	q.lock.Lock()
-	message := q.delivered[idx]
+	var message messages.Message
+	for _, msg := range q.delivered {
+		if msg.Id == id {
+			message = msg
+		}
+	}
 	q.messages = append(q.messages, message)
 	q.delivered = slices.DeleteFunc(q.delivered, func(m messages.Message) bool { return m.Id == message.Id })
 	q.lock.Unlock()
@@ -143,10 +148,10 @@ func MonitorQueues() {
 		QueueLock.RLock()
 		for k := range QueueStore {
 			queue := QueueStore[k]
-			for idx, message := range queue.getDelivered() {
+			for _, message := range queue.getDelivered() {
 				if time.Since(message.DeliveredAt) >= 10*time.Second {
 					fmt.Println("requeueing un-acked message ", message.Id, " in queue", queue.getName())
-					queue.requeueMessage(idx)
+					queue.requeueMessage(message.Id)
 				}
 			}
 		}
