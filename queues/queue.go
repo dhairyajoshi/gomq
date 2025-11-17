@@ -2,6 +2,7 @@ package queues
 
 import (
 	"fmt"
+	"net"
 	"slices"
 	"sync"
 	"time"
@@ -12,16 +13,18 @@ import (
 type Queue interface {
 	Enqueue(message messages.Message) bool
 	Consume() messages.Message
-	getDeliverd() []messages.Message
+	getDelivered() []messages.Message
 	getName() string
 	requeueMessage(idx int) bool
+	Subscribe(*net.Conn) bool
 }
 
 type DurableQueue struct {
-	name      string
-	messages  []messages.Message
-	delivered []messages.Message
-	lock      sync.Mutex
+	name        string
+	messages    []messages.Message
+	delivered   []messages.Message
+	subscribers []*net.Conn
+	lock        sync.Mutex
 }
 
 func (q *DurableQueue) getName() string {
@@ -29,7 +32,18 @@ func (q *DurableQueue) getName() string {
 }
 
 func (q *DurableQueue) Enqueue(message messages.Message) bool {
-	q.messages = append(q.messages, message)
+	if len(q.subscribers) > 0 {
+		q.lock.Lock()
+		for _, sub := range q.subscribers {
+			_, err := (*sub).Write([]byte(message.Data))
+			if err != nil {
+				fmt.Println("error sending message to subscriber: ", err.Error())
+				(*sub).Close()
+			}
+		}
+	} else {
+		q.messages = append(q.messages, message)
+	}
 	return true
 }
 
@@ -43,7 +57,7 @@ func (q *DurableQueue) Consume() messages.Message {
 	return message
 }
 
-func (q *DurableQueue) getDeliverd() []messages.Message {
+func (q *DurableQueue) getDelivered() []messages.Message {
 	return q.delivered
 }
 
@@ -52,6 +66,13 @@ func (q *DurableQueue) requeueMessage(idx int) bool {
 	message := q.delivered[idx]
 	q.messages = append(q.messages, message)
 	q.delivered = slices.DeleteFunc(q.delivered, func(m messages.Message) bool { return m.Id == message.Id })
+	q.lock.Unlock()
+	return true
+}
+
+func (q *DurableQueue) Subscribe(conn *net.Conn) bool {
+	q.lock.Lock()
+	q.subscribers = append(q.subscribers, conn)
 	q.lock.Unlock()
 	return true
 }
@@ -92,7 +113,7 @@ func MonitorQueues() {
 	for {
 		for k := range QueueStore {
 			queue := QueueStore[k]
-			for idx, message := range queue.getDeliverd() {
+			for idx, message := range queue.getDelivered() {
 				if time.Since(message.DeliveredAt) >= 10*time.Second {
 					fmt.Println("requeueing un-acked message ", message.Id, " in queue", queue.getName())
 					queue.requeueMessage(idx)

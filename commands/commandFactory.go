@@ -1,13 +1,17 @@
 package commands
 
-import "fmt"
+import (
+	"fmt"
 
-var commandFactory = map[string]func(args ...any) (bool, string){
-	"exit": func(args ...any) (bool, string) {
-		return true, "Closing connection, bye bye!"
+	"github.com/dhairyajoshi/gomq/parsers"
+)
+
+var commandFactory = map[string]func(args ...any) parsers.ServerResponse{
+	"exit": func(args ...any) parsers.ServerResponse {
+		return parsers.ServerResponse{Data: "Closing connection, bye bye!", Type: "server_response", SendNext: false, Close: true}
 	},
-	"echo": func(args ...any) (bool, string) {
-		return false, fmt.Sprint(args...)
+	"echo": func(args ...any) parsers.ServerResponse {
+		return parsers.ServerResponse{Close: false, Data: fmt.Sprint(args...), SendNext: true, Type: "server_response"}
 	},
 }
 

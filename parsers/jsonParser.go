@@ -7,7 +7,7 @@ import (
 
 type JsonParser struct{}
 
-func (jp JsonParser) Encode(response map[string]any) []byte {
+func (jp JsonParser) Encode(response ServerResponse) []byte {
 	data, err := json.Marshal(response)
 	if err != nil {
 		fmt.Println("Error encoding to json: ", err.Error())

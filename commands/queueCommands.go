@@ -2,61 +2,83 @@ package commands
 
 import (
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/dhairyajoshi/gomq/messages"
+	"github.com/dhairyajoshi/gomq/parsers"
 	"github.com/dhairyajoshi/gomq/queues"
 	"github.com/google/uuid"
 )
 
-func createQueue(args ...any) (bool, string) {
-	name, ok := args[0].(string)
+func createQueue(args ...any) parsers.ServerResponse {
+	name, ok := args[1].(string)
 	if !ok {
 		fmt.Println("Name not a valid string: ", name)
-		return false, "Name not a valid string: "
+		return parsers.ServerResponse{Data: "Name not a valid string", SendNext: true, Close: false, Type: "server_response"}
 	}
-	_, created := queues.NewDurableQueue(name)
+	_, created := queues.GetOrCreateDurableQueue(name)
 	if created {
-		return false, "Queue created Successfuly"
+		return parsers.ServerResponse{Data: "Queue created Successfully", SendNext: true, Close: false, Type: "server_response"}
 	}
-	return false, "Couldn't create queue"
+	return parsers.ServerResponse{Data: "Queue already exists", SendNext: true, Close: false, Type: "server_response"}
 }
 
-func publishMessage(args ...any) (bool, string) {
-	queueName, ok := args[0].(string)
+func publishMessage(args ...any) parsers.ServerResponse {
+	queueName, ok := args[1].(string)
 	if !ok {
 		fmt.Println("invalid queue name ", queueName)
-		return false, "invalid queue name"
+		return parsers.ServerResponse{Data: "invalid queue name", SendNext: true, Close: false, Type: "server_response"}
 	}
-	message, ok := args[1].(string)
+	message, ok := args[2].(string)
 	if !ok {
 		fmt.Println("Invalid message ", message)
-		return false, "invalid message"
+		return parsers.ServerResponse{Data: "invalid message", SendNext: true, Close: false, Type: "server_response"}
 	}
 	queue, _ := queues.GetOrCreateDurableQueue(queueName)
 	ok = queue.Enqueue(messages.Message{Id: uuid.New().String(), Data: []byte(message), EnqueuedAt: time.Now().String()})
 	if !ok {
-		return false, "Couldn't enqueue message"
+		return parsers.ServerResponse{Data: "Couldn't enqueue message", SendNext: true, Close: false, Type: "server_response"}
 	}
-	return false, "Message enqueued Successfuly"
+	return parsers.ServerResponse{Data: "Message enqueued Successfully", SendNext: true, Close: false, Type: "server_response"}
 }
 
-func consumeMessage(args ...any) (bool, string) {
-	queueName, ok := args[0].(string)
+func consumeMessage(args ...any) parsers.ServerResponse {
+	queueName, ok := args[1].(string)
 	if !ok {
 		fmt.Println("invalid queue name ", queueName)
-		return false, "invalid queue name"
+		return parsers.ServerResponse{Data: "invalid queue name", SendNext: true, Close: false, Type: "server_response"}
 	}
 	queue, _ := queues.GetOrCreateDurableQueue(queueName)
 	message := queue.Consume()
 	if !ok {
-		return false, "Couldn't consume message"
+		return parsers.ServerResponse{Data: "Couldn't consume message", SendNext: true, Close: false, Type: "server_response"}
 	}
-	return false, string(message.Data)
+	return parsers.ServerResponse{Data: message, SendNext: true, Close: false, Type: "message"}
 }
 
-var queueCommands = map[string]func(args ...any) (bool, string){
+func subscribeQueue(args ...any) parsers.ServerResponse {
+	conn, ok := args[0].(*net.Conn)
+	if !ok {
+		fmt.Println("Didn't receive valid connection!")
+		return parsers.ServerResponse{Data: "Didn't receive valid connection!", SendNext: true, Close: false, Type: "server_response"}
+	}
+	queueName, ok := args[1].(string)
+	if !ok {
+		fmt.Println("invalid queue name ", queueName)
+		return parsers.ServerResponse{Data: "invalid queue name", SendNext: true, Close: false, Type: "server_response"}
+	}
+	queue, _ := queues.GetOrCreateDurableQueue(queueName)
+	ok = queue.Subscribe(conn)
+	if !ok {
+		return parsers.ServerResponse{Data: "Couldn't subscribe to queue", SendNext: true, Close: false, Type: "server_response"}
+	}
+	return parsers.ServerResponse{Data: "Subscribed to queue, you will receive messages as they're published!", SendNext: false, Close: false, Type: "server_response"}
+}
+
+var queueCommands = map[string]func(args ...any) parsers.ServerResponse{
 	"create-queue":    createQueue,
 	"publish-message": publishMessage,
 	"consume-message": consumeMessage,
+	"subscribe-queue": subscribeQueue,
 }
