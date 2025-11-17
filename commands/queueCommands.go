@@ -50,9 +50,9 @@ func consumeMessage(args ...any) parsers.ServerResponse {
 		return parsers.ServerResponse{Data: "invalid queue name", SendNext: true, Close: false, Type: "server_response"}
 	}
 	queue, _ := queues.GetOrCreateDurableQueue(queueName)
-	message := queue.Consume()
-	if !ok {
-		return parsers.ServerResponse{Data: "Couldn't consume message", SendNext: true, Close: false, Type: "server_response"}
+	message, found := queue.Consume()
+	if !found {
+		return parsers.ServerResponse{Type: "server_response", Data: "No messages in the queue!", SendNext: true}
 	}
 	return parsers.ServerResponse{Data: message, SendNext: true, Close: false, Type: "message"}
 }
