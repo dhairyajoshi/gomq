@@ -2,8 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"net"
 
+	"github.com/dhairyajoshi/gomq/io"
 	"github.com/dhairyajoshi/gomq/parsers"
 )
 
@@ -20,13 +20,13 @@ func getCommandAndArgs(input string) (func(args ...any) parsers.ServerResponse, 
 	return exec, decodedInput.Args
 }
 
-func getResponse(conn *net.Conn, input string) parsers.ServerResponse {
+func getResponse(ioHandler *io.IOHandler, input string) parsers.ServerResponse {
 	fun, args := getCommandAndArgs(input)
-	funcArgs := []any{conn}
+	funcArgs := []any{ioHandler}
 	funcArgs = append(funcArgs, args...)
 	return fun(funcArgs...)
 }
 
-func HandleCommand(conn *net.Conn, input string) parsers.ServerResponse {
-	return getResponse(conn, input)
+func HandleCommand(ioHandler *io.IOHandler, input string) parsers.ServerResponse {
+	return getResponse(ioHandler, input)
 }

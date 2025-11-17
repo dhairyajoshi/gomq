@@ -5,28 +5,26 @@ import (
 	"net"
 
 	"github.com/dhairyajoshi/gomq/commands"
+	"github.com/dhairyajoshi/gomq/io"
 	"github.com/dhairyajoshi/gomq/parsers"
 )
 
 func handleConn(conn net.Conn) {
-	parser := parsers.GetParser()
-	response := parser.Encode(parsers.ServerResponse{Type: "server_response", Data: "Connected to GoMQ, ready to exchange messages!\n", SendNext: true, Close: false})
-	_, err := conn.Write(response)
+	ioHandler := io.NewIoHandler(&conn)
+	_, err := ioHandler.Write(parsers.ServerResponse{Type: "server_response", Data: "Connected to GoMQ, ready to exchange messages!\n", SendNext: true, Close: false})
 	if err != nil {
 		fmt.Println("error writing to connection, ", err.Error())
 		conn.Close()
 		return
 	}
 	for {
-		input := make([]byte, 1024)
-		n, err := conn.Read(input)
+		input, err := ioHandler.Read()
 		if err != nil {
 			fmt.Println("Error reading input: ", err.Error())
 			return
 		}
-		response := commands.HandleCommand(&conn, string(input[:n]))
-		server_response := parser.Encode(response)
-		conn.Write(server_response)
+		response := commands.HandleCommand(ioHandler, string(input))
+		ioHandler.Write(response)
 		if response.Close {
 			conn.Close()
 			return

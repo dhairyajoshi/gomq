@@ -2,9 +2,9 @@ package commands
 
 import (
 	"fmt"
-	"net"
 	"time"
 
+	"github.com/dhairyajoshi/gomq/io"
 	"github.com/dhairyajoshi/gomq/messages"
 	"github.com/dhairyajoshi/gomq/parsers"
 	"github.com/dhairyajoshi/gomq/queues"
@@ -36,7 +36,7 @@ func publishMessage(args ...any) parsers.ServerResponse {
 		return parsers.ServerResponse{Data: "invalid message", SendNext: true, Close: false, Type: "server_response"}
 	}
 	queue, _ := queues.GetOrCreateDurableQueue(queueName)
-	ok = queue.Enqueue(messages.Message{Id: uuid.New().String(), Data: []byte(message), EnqueuedAt: time.Now().String()})
+	ok = queue.Enqueue(messages.Message{Id: uuid.New().String(), Data: message, EnqueuedAt: time.Now().String()})
 	if !ok {
 		return parsers.ServerResponse{Data: "Couldn't enqueue message", SendNext: true, Close: false, Type: "server_response"}
 	}
@@ -58,7 +58,7 @@ func consumeMessage(args ...any) parsers.ServerResponse {
 }
 
 func subscribeQueue(args ...any) parsers.ServerResponse {
-	conn, ok := args[0].(*net.Conn)
+	conn, ok := args[0].(*io.IOHandler)
 	if !ok {
 		fmt.Println("Didn't receive valid connection!")
 		return parsers.ServerResponse{Data: "Didn't receive valid connection!", SendNext: true, Close: false, Type: "server_response"}

@@ -2,12 +2,13 @@ package queues
 
 import (
 	"fmt"
-	"net"
 	"slices"
 	"sync"
 	"time"
 
+	"github.com/dhairyajoshi/gomq/io"
 	"github.com/dhairyajoshi/gomq/messages"
+	"github.com/dhairyajoshi/gomq/parsers"
 )
 
 type Queue interface {
@@ -16,14 +17,14 @@ type Queue interface {
 	getDelivered() []messages.Message
 	getName() string
 	requeueMessage(idx int) bool
-	Subscribe(*net.Conn) bool
+	Subscribe(*io.IOHandler) bool
 }
 
 type DurableQueue struct {
 	name        string
 	messages    []messages.Message
 	delivered   []messages.Message
-	subscribers []*net.Conn
+	subscribers []*io.IOHandler
 	lock        sync.Mutex
 }
 
@@ -35,12 +36,14 @@ func (q *DurableQueue) Enqueue(message messages.Message) bool {
 	if len(q.subscribers) > 0 {
 		q.lock.Lock()
 		for _, sub := range q.subscribers {
-			_, err := (*sub).Write([]byte(message.Data))
+			_, err := (*sub).Write(parsers.ServerResponse{Type: "message", Data: message, SendNext: false, Close: false})
 			if err != nil {
 				fmt.Println("error sending message to subscriber: ", err.Error())
+				(*sub).Write(parsers.ServerResponse{Type: "server_response", Data: "Closing connection!", SendNext: false, Close: true})
 				(*sub).Close()
 			}
 		}
+		q.lock.Unlock()
 	} else {
 		q.messages = append(q.messages, message)
 	}
@@ -70,7 +73,7 @@ func (q *DurableQueue) requeueMessage(idx int) bool {
 	return true
 }
 
-func (q *DurableQueue) Subscribe(conn *net.Conn) bool {
+func (q *DurableQueue) Subscribe(conn *io.IOHandler) bool {
 	q.lock.Lock()
 	q.subscribers = append(q.subscribers, conn)
 	q.lock.Unlock()

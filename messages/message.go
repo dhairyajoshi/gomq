@@ -7,5 +7,5 @@ type Message struct {
 	EnqueuedAt  string `json:"enqueued_at"`
 	CreatedAt   string `json:"created_at"`
 	DeliveredAt time.Time
-	Data        []byte `json:"data"`
+	Data        string `json:"data"`
 }

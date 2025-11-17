@@ -15,4 +15,5 @@ type ServerResponse struct {
 type Parser interface {
 	Encode(response ServerResponse) []byte
 	Decode(input []byte) DecodedMessage
+	ClientDecode([]byte) ServerResponse
 }

@@ -26,6 +26,16 @@ func (jp JsonParser) Decode(request []byte) DecodedMessage {
 	return jsonData
 }
 
+func (jp JsonParser) ClientDecode(input []byte) ServerResponse {
+	jsonData := ServerResponse{}
+	err := json.Unmarshal(input, &jsonData)
+	if err != nil {
+		fmt.Println("Error decoding to json: ", err.Error())
+		return ServerResponse{}
+	}
+	return jsonData
+}
+
 func NewJsonParser() JsonParser {
 	return JsonParser{}
 }
